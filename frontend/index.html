@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Club Activity Management System</title>
+<style>
+  /* ============================================================
+     DESIGN TOKENS
+     Institutional portal palette — deep navy + official gold,
+     on a cool light background. Georgia for headings (the same
+     kind of serif used on university/government sites), Arial
+     for everything else. No decorative or "AI" fonts.
+  ============================================================ */
+  :root{
+    --navy-950:#081426;
+    --navy-900:#0d2440;
+    --navy-800:#15325a;
+    --navy-700:#1c3f6e;
+    --gold-600:#b8863b;
+    --gold-500:#caa056;
+    --gold-100:#f5ead2;
+    --bg:#eef1f5;
+    --surface:#ffffff;
+    --border:#d7dce3;
+    --text:#1c2530;
+    --text-muted:#5b6675;
+    --success:#1c7a4c;
+    --success-bg:#e5f4ec;
+    --danger:#b3261e;
+    --danger-bg:#fbe9e7;
+    --warning:#a6650d;
+    --warning-bg:#fdf1e0;
+    --info:#28587a;
+    --info-bg:#e6eef4;
+    --radius:4px;
+    --font-head: Georgia, 'Times New Roman', Times, serif;
+    --font-body: Arial, Helvetica, sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font-body);
+    color:var(--text);
+    background:var(--bg);
+    font-size:14px;
+    line-height:1.5;
+  }
+  h1,h2,h3,h4{font-family:var(--font-head); font-weight:700; margin:0 0 6px 0;}
+  a{color:var(--navy-800); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  button{font-family:var(--font-body); cursor:pointer;}
+  table{border-collapse:collapse; width:100%;}
+  ::selection{background:var(--gold-100);}
+
+  /* Focus visibility kept everywhere for keyboard use */
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+    outline:2px solid var(--navy-800); outline-offset:2px;
+  }
+
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  /* ============================================================
+     LANDING / LOGIN
+  ============================================================ */
+  #landing.active{display:flex; min-height:100vh;}
+  .landing-grid{display:flex; width:100%; min-height:100vh;}
+
+  .landing-info{
+    flex:1.15;
+    background:var(--navy-900);
+    color:#eef2f7;
+    position:relative;
+    overflow:hidden;
+    padding:56px 60px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+  }
+  /* Photo layer: replace the file names below with your own images.
+     Blurred, tilted and slowly panning behind the content. */
+  .bg-photo{
+    position:absolute; inset:-40px; z-index:0;
+    background-image:url('assets/admin-block.JPG');
+    background-size:cover; background-position:center;
+    filter:brightness(0.55) saturate(0.9);
+    transform:rotate(-4deg) scale(1.22);
+    animation:slowPan 30s ease-in-out infinite alternate;
+  }
+  @keyframes slowPan{
+    0%{ transform:rotate(-4deg) scale(1.22) translate(0,0); }
+    100%{ transform:rotate(-2deg) scale(1.3) translate(-2%,-1%); }
+  }
+  @media (prefers-reduced-motion: reduce){ .bg-photo{ animation:none; } }
+  .bg-overlay{
+    position:absolute; inset:0; z-index:1;
+    background:linear-gradient(160deg, rgba(8,20,38,0.88), rgba(13,36,64,0.86));
+  }
+  /* Blueprint-style campus network pattern — the signature visual.
+     Faint dotted "campus map" of nodes and connecting lines,
+     evoking clubs linked into one system, drawn purely in CSS/SVG. */
+  .blueprint-bg{
+    position:absolute; inset:0; opacity:0.16; pointer-events:none;
+    background-image:
+      radial-gradient(circle at 15% 20%, transparent 0, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 3px, transparent 3px),
+      radial-gradient(circle at 70% 15%, transparent 0, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 3px, transparent 3px),
+      radial-gradient(circle at 85% 55%, transparent 0, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 3px, transparent 3px),
+      radial-gradient(circle at 30% 70%, transparent 0, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 3px, transparent 3px),
+      radial-gradient(circle at 55% 85%, transparent 0, transparent 2px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 3px, transparent 3px),
+      linear-gradient(rgba(255,255,255,0.14) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.14) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 42px 42px, 42px 42px;
+    z-index:2;
+  }
+  .landing-info .brand-mark,
+  .landing-info .landing-copy,
+  .landing-info .landing-foot{ position:relative; z-index:3; }
+  .brand-mark{display:flex; align-items:center; gap:8px;}
+  .crest{
+    width:52px; height:52px; background:#ffffff; color:var(--navy-950);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-head); font-weight:700; font-size:15px; letter-spacing:0.5px;
+    border-radius:50%;
+    border:2px solid var(--gold-500);
+    padding:5px;
+  }
+  .crest img{ width:150%; height:150%; object-fit:contain; border-radius:50%; }
+  .brand-text .eyebrow{font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold-500);}
+  .brand-text .name{font-family:var(--font-head); font-size:19px; font-weight:700; color:#fff;}
+
+  .landing-copy{max-width:480px; margin-top:60px;}
+  .landing-copy h1{font-size:34px; line-height:1.25; color:#fff; margin-bottom:16px;}
+  .landing-copy p{color:#cbd6e3; font-size:15px;}
+  .landing-stats{display:flex; gap:28px; margin-top:34px; flex-wrap:wrap;}
+  .landing-stats div{border-left:3px solid var(--gold-600); padding-left:12px;}
+  .landing-stats strong{display:block; font-family:var(--font-head); font-size:22px; color:#fff;}
+  .landing-stats span{font-size:12px; color:#a9b8c9;}
+
+  .landing-foot{font-size:12px; color:#93a3b7;}
+  .landing-foot .badges{display:flex; gap:10px; margin-top:8px; flex-wrap:wrap;}
+  .landing-foot .badge{border:1px solid #345277; padding:3px 9px; border-radius:2px; color:#cbd6e3;}
+
+  .landing-login{
+    flex:0.85; min-width:380px; background:var(--surface);
+    display:flex; align-items:center; justify-content:center; padding:40px;
+  }
+  .login-card{width:100%; max-width:360px;}
+  .login-card h2{font-size:20px; margin-bottom:4px;}
+  .login-card .sub{color:var(--text-muted); font-size:13px; margin-bottom:20px;}
+
+  .role-tabs{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px;}
+  .role-tab{
+    border:1px solid var(--border); background:var(--surface); padding:9px 6px;
+    font-size:12px; text-align:center; border-radius:var(--radius); color:var(--text-muted);
+  }
+  .role-tab.selected{background:var(--navy-900); border-color:var(--navy-900); color:#fff;}
+
+  .field{margin-bottom:15px;}
+  .field label{display:block; font-size:12px; font-weight:bold; margin-bottom:5px; color:var(--text);}
+  .field input, .field select, .field textarea{
+    width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:var(--radius);
+    font-family:var(--font-body); font-size:13px; background:#fbfcfd; color:var(--text);
+  }
+  .field textarea{resize:vertical; min-height:70px;}
+  .row-between{display:flex; justify-content:space-between; align-items:center; font-size:12px; margin-bottom:18px;}
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    padding:10px 18px; border-radius:var(--radius); border:1px solid transparent;
+    font-size:13px; font-weight:bold;
+  }
+  .btn-primary{background:var(--navy-900); color:#fff;}
+  .btn-primary:hover{background:var(--navy-800);}
+  .btn-gold{background:var(--gold-600); color:#2a1c05;}
+  .btn-gold:hover{background:var(--gold-500);}
+  .btn-outline{background:#fff; border-color:var(--border); color:var(--text);}
+  .btn-outline:hover{border-color:var(--navy-800); color:var(--navy-800);}
+  .btn-block{width:100%;}
+  .btn-sm{padding:6px 11px; font-size:12px;}
+  .btn-danger-outline{background:#fff; border-color:var(--danger); color:var(--danger);}
+  .btn-success-outline{background:#fff; border-color:var(--success); color:var(--success);}
+
+  .login-divider{display:flex; align-items:center; gap:10px; margin:18px 0; color:var(--text-muted); font-size:11px;}
+  .login-divider::before, .login-divider::after{content:""; flex:1; height:1px; background:var(--border);}
+
+  .demo-note{margin-top:16px; font-size:11px; color:var(--text-muted); background:var(--info-bg); border:1px solid #c9dae7; padding:8px 10px; border-radius:var(--radius);}
+
+  /* ============================================================
+     SHARED APP CHROME (topbar / header / ticker)
+  ============================================================ */
+  .topbar{
+    background:var(--navy-950); color:#c9d4e0; font-size:11.5px;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:5px 24px;
+  }
+  .topbar .left span{margin-right:16px;}
+  .topbar .right{display:flex; align-items:center; gap:16px;}
+  .topbar .right a{color:#c9d4e0;}
+  .user-chip{display:flex; align-items:center; gap:8px; background:#122236; padding:3px 10px 3px 3px; border-radius:20px;}
+  .user-chip .avatar{width:22px; height:22px; border-radius:50%; background:var(--gold-600); color:#2a1c05; font-weight:bold; font-size:10.5px; display:flex; align-items:center; justify-content:center;}
+
+  .main-header{
+    background:var(--navy-900); color:#fff; padding:16px 24px;
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+    border-bottom:3px solid var(--gold-600);
+  }
+  .main-header .brand-mark .name{font-size:17px;}
+  .main-header .brand-mark .eyebrow{font-size:10px;}
+  .header-actions{display:flex; align-items:center; gap:10px;}
+
+  .ticker{
+    background:#fff; border-bottom:1px solid var(--border);
+    display:flex; align-items:stretch; overflow:hidden;
+  }
+  .ticker-tag{
+    background:var(--gold-100); color:var(--gold-600); font-weight:bold; font-size:11px;
+    letter-spacing:0.5px; padding:8px 14px; white-space:nowrap; border-right:1px solid var(--border);
+    display:flex; align-items:center;
+  }
+  .ticker-track{display:flex; align-items:center; overflow:hidden; flex:1; position:relative;}
+  .ticker-move{display:flex; white-space:nowrap; animation:tickerScroll 32s linear infinite; padding-left:100%;}
+  .ticker-move span{padding:0 40px; font-size:12.5px; color:var(--text);}
+  @keyframes tickerScroll{ from{transform:translateX(0);} to{transform:translateX(-100%);} }
+  @media (prefers-reduced-motion: reduce){ .ticker-move{animation:none; padding-left:16px;} }
+
+  /* ============================================================
+     APP BODY — sidebar + content
+  ============================================================ */
+  .app-body{display:flex; min-height:calc(100vh - 108px);}
+  .sidebar{
+    width:230px; background:var(--navy-800); color:#dbe4ef; padding:16px 0; flex-shrink:0;
+  }
+  .sidebar .group-label{font-size:10.5px; letter-spacing:1px; text-transform:uppercase; color:#8ba3c2; padding:14px 20px 6px;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:10px 20px; font-size:13px; color:#dbe4ef;
+    border-left:3px solid transparent; cursor:pointer;
+  }
+  .nav-item:hover{background:var(--navy-700);}
+  .nav-item.active{background:var(--navy-900); border-left-color:var(--gold-600); color:#fff; font-weight:bold;}
+  .nav-icon{width:16px; text-align:center; font-family:var(--font-head);}
+
+  .content{flex:1; padding:26px 30px; min-width:0;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .content-head{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:20px;}
+  .content-head h2{font-size:21px;}
+  .content-head .sub{color:var(--text-muted); font-size:12.5px;}
+  .crumbs{font-size:11px; color:var(--text-muted); margin-bottom:6px;}
+
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);}
+  .card-pad{padding:18px 20px;}
+
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px; margin-bottom:24px;}
+  .stat-card{background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--navy-800); border-radius:var(--radius); padding:16px 18px;}
+  .stat-card .label{font-size:11.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);}
+  .stat-card .value{font-family:var(--font-head); font-size:26px; margin:4px 0;}
+  .stat-card .delta{font-size:11.5px; color:var(--success);}
+  .stat-card.gold{border-left-color:var(--gold-600);}
+
+  .panel-title{display:flex; justify-content:space-between; align-items:center; padding:14px 20px; border-bottom:1px solid var(--border);}
+  .panel-title h3{font-size:14.5px;}
+
+  table.data th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.4px;
+    color:var(--text-muted); background:#f5f7f9; padding:10px 14px; border-bottom:1px solid var(--border);
+  }
+  table.data td{padding:11px 14px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle;}
+  table.data tr:last-child td{border-bottom:none;}
+  table.data tr:hover td{background:#fafbfc;}
+
+  .badge{display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:bold;}
+  .badge-success{background:var(--success-bg); color:var(--success);}
+  .badge-warning{background:var(--warning-bg); color:var(--warning);}
+  .badge-danger{background:var(--danger-bg); color:var(--danger);}
+  .badge-info{background:var(--info-bg); color:var(--info);}
+  .badge-neutral{background:#eef1f5; color:var(--text-muted); border:1px solid var(--border);}
+
+  .role-chip{font-size:10.5px; padding:2px 8px; border-radius:3px; border:1px solid var(--border); background:#f7f8fa; color:var(--text-muted); margin-right:4px; display:inline-block; margin-bottom:4px;}
+
+  .grid-2{display:grid; grid-template-columns:1.4fr 1fr; gap:20px;}
+  @media (max-width:900px){ .grid-2{grid-template-columns:1fr;} }
+
+  .activity-list{list-style:none; margin:0; padding:0;}
+  .activity-list li{padding:11px 20px; border-bottom:1px solid var(--border); font-size:12.5px; display:flex; gap:10px;}
+  .activity-list li:last-child{border-bottom:none;}
+  .activity-list .dot{width:7px; height:7px; border-radius:50%; background:var(--gold-600); margin-top:5px; flex-shrink:0;}
+  .activity-list .time{color:var(--text-muted); font-size:11px; display:block;}
+
+  .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .search-box{padding:8px 12px; border:1px solid var(--border); border-radius:var(--radius); font-size:12.5px; min-width:200px;}
+
+  .event-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px;}
+  .event-card{border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; background:#fff;}
+  .event-card .event-top{height:8px; background:var(--navy-800);}
+  .event-card.approved .event-top{background:var(--success);}
+  .event-card.draft .event-top{background:var(--warning);}
+  .event-card.completed .event-top{background:var(--text-muted);}
+  .event-card .event-body{padding:14px 16px;}
+  .event-card h4{font-size:14px; margin-bottom:6px;}
+  .event-card .meta{font-size:11.5px; color:var(--text-muted); margin-bottom:10px;}
+  .event-card .meta div{margin-bottom:2px;}
+  .event-card .foot{display:flex; justify-content:space-between; align-items:center; padding:10px 16px; border-top:1px solid var(--border); background:#fafbfc;}
+
+  .kanban{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media (max-width:800px){ .kanban{grid-template-columns:1fr;} }
+  .kanban-col{background:#f5f7f9; border:1px solid var(--border); border-radius:var(--radius); padding:12px;}
+  .kanban-col h4{font-size:12.5px; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-muted); margin-bottom:10px;}
+  .kanban-card{background:#fff; border:1px solid var(--border); border-left:3px solid var(--navy-800); border-radius:3px; padding:10px 12px; margin-bottom:10px; font-size:12.5px;}
+  .kanban-card .who{font-size:11px; color:var(--text-muted); margin-top:6px;}
+  .kanban-col.done .kanban-card{border-left-color:var(--success);}
+  .kanban-col.progress .kanban-card{border-left-color:var(--warning);}
+
+  .report-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px;}
+  .report-card{border:1px solid var(--border); border-radius:var(--radius); padding:18px; background:#fff;}
+  .report-card .r-icon{width:34px; height:34px; background:var(--navy-900); color:var(--gold-500); font-family:var(--font-head); display:flex; align-items:center; justify-content:center; border-radius:3px; margin-bottom:10px; font-size:15px;}
+  .report-card h4{font-size:13.5px; margin-bottom:4px;}
+  .report-card p{font-size:11.5px; color:var(--text-muted); margin:0 0 12px;}
+  .report-card .r-actions{display:flex; gap:8px;}
+
+  /* Role visibility: Super Admin console vs Club Workspace */
+  body.role-superadmin [data-role-club]{display:none !important;}
+  body.role-club [data-role-admin]{display:none !important;}
+
+  /* ============================================================
+     MODALS
+  ============================================================ */
+  .modal-overlay{position:fixed; inset:0; background:rgba(8,14,26,0.55); display:none; align-items:center; justify-content:center; z-index:100; padding:20px;}
+  .modal-overlay.active{display:flex;}
+  .modal{background:#fff; width:100%; max-width:560px; border-radius:var(--radius); max-height:88vh; overflow-y:auto;}
+  .modal-head{padding:16px 22px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--navy-900); color:#fff; border-radius:4px 4px 0 0;}
+  .modal-head h3{font-size:15px; color:#fff;}
+  .modal-close{background:none; border:none; color:#cbd6e3; font-size:18px; line-height:1;}
+  .modal-body{padding:20px 22px;}
+  .checklist{list-style:none; margin:0 0 18px; padding:0;}
+  .checklist li{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px dashed var(--border); font-size:13px;}
+  .checklist li:last-child{border-bottom:none;}
+  .modal-foot{display:flex; justify-content:flex-end; gap:10px; padding:14px 22px; border-top:1px solid var(--border);}
+
+  /* Mobile sidebar toggle */
+  .menu-toggle{display:none; background:var(--navy-800); color:#fff; border:none; padding:8px 12px; border-radius:3px; font-size:13px;}
+  @media (max-width:820px){
+    .menu-toggle{display:inline-flex;}
+    .sidebar{position:fixed; left:-240px; top:0; bottom:0; z-index:60; transition:left 0.2s ease; box-shadow:2px 0 10px rgba(0,0,0,0.2);}
+    .sidebar.open{left:0;}
+    .landing-grid{flex-direction:column;}
+    .landing-info{padding:36px 24px;}
+    .landing-login{min-width:0;}
+  }
+
+  .confirm-wrap{max-width:520px; margin:80px auto; text-align:center; padding:0 20px;}
+  .confirm-icon{width:60px; height:60px; border-radius:50%; background:var(--success-bg); color:var(--success); font-size:28px; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-family:var(--font-head);}
+  .id-box{display:inline-block; background:#f5f7f9; border:1px dashed var(--border); padding:8px 16px; font-family:'Courier New',monospace; font-size:13px; margin:14px 0; border-radius:3px;}
+</style>
+</head>
+<body class="role-club">
+
+<!-- ============================================================
+     SCREEN 1: LANDING + LOGIN
+============================================================ -->
+<div id="landing" class="screen active">
+  <div class="landing-grid">
+    <div class="landing-info">
+      <div class="bg-photo"></div>
+      <div class="bg-overlay"></div>
+      <div class="blueprint-bg"></div>
+      <div class="brand-mark">
+        <div class="crest"><img src="assets/nitt-logo.png" alt="Institute Logo"></div>
+        <div class="brand-text">
+          <div class="eyebrow">Office of Student Affairs</div>
+          <div class="name">Club Activity Management System</div>
+        </div>
+      </div>
+
+      <div class="landing-copy">
+        <h1>One system for every club, event and approval on campus.</h1>
+        <p>Register a new club, track member activity, run events end‑to‑end, and generate reports — all from a single institutional portal used by Super Admins, Club Presidents, Faculty Advisors and Members alike.</p>
+      
+      </div>
+
+      <div class="landing-foot">
+        
+      </div>
+    </div>
+
+    <div class="landing-login">
+      <div class="login-card">
+        <h2>Sign in to your account</h2>
+        <div class="sub">Select your role to continue</div>
+
+        <div class="role-tabs" id="roleTabs">
+          <button type="button" class="role-tab selected" data-role="club" data-label="Club President">Club President</button>
+          <button type="button" class="role-tab" data-role="superadmin" data-label="Super Admin">Super Admin</button>
+          <button type="button" class="role-tab" data-role="club" data-label="Faculty Advisor">Faculty Advisor</button>
+          <button type="button" class="role-tab" data-role="club" data-label="Member / Volunteer">Member / Volunteer</button>
+        </div>
+
+        <div id="loginAlert" style="display:none;"></div>
+
+        <div class="field">
+          <label for="loginId">User ID or Email</label>
+          <input id="loginId" type="text" placeholder="e.g. arjun.mehta@college.edu" autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="loginPass">Password</label>
+          <input id="loginPass" type="password" placeholder="Enter password" autocomplete="current-password">
+        </div>
+        <div class="row-between">
+          <label><input type="checkbox" id="keepSignedIn" checked> Keep me signed in</label>
+          <a href="#" onclick="fillDemoForActiveRole(); return false;" style="font-size:12px; color:var(--navy-700); font-weight:600;">🔄 Reset Demo Credentials</a>
+        </div>
+
+        <button class="btn btn-primary btn-block" id="signInBtn" onclick="signIn()">Sign In</button>
+
+        <div class="login-divider">OR</div>
+        <button class="btn btn-outline btn-block" onclick="goTo('request')">Submit a New Club Creation Request</button>
+
+        <div class="demo-note" style="line-height:1.45; margin-top:14px;">
+          <div style="font-weight:700; color:var(--navy-900); margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+            <span>⚡ Institutional Demo Accounts (Click to auto-fill):</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="cursor:pointer; padding:5px 8px; border-radius:3px; background:#ffffff; border:1px solid #c9dae7; transition:all 0.15s;" onclick="selectRoleByLabel('Super Admin')" onmouseover="this.style.borderColor='var(--gold-600)'" onmouseout="this.style.borderColor='#c9dae7'">
+              <strong>Super Admin:</strong> <code>rekha.iyer@nitt.edu</code> &middot; <code>Admin@1234</code>
+            </div>
+            <div style="cursor:pointer; padding:5px 8px; border-radius:3px; background:#ffffff; border:1px solid #c9dae7; transition:all 0.15s;" onclick="selectRoleByLabel('Club President')" onmouseover="this.style.borderColor='var(--gold-600)'" onmouseout="this.style.borderColor='#c9dae7'">
+              <strong>Club President:</strong> <code>arjun.mehta@college.edu</code> &middot; <code>Pres@1234</code>
+            </div>
+            <div style="cursor:pointer; padding:5px 8px; border-radius:3px; background:#ffffff; border:1px solid #c9dae7; transition:all 0.15s;" onclick="selectRoleByLabel('Faculty Advisor')" onmouseover="this.style.borderColor='var(--gold-600)'" onmouseout="this.style.borderColor='#c9dae7'">
+              <strong>Faculty Advisor:</strong> <code>r.sharma@college.edu</code> &middot; <code>Adv@1234</code>
+            </div>
+            <div style="cursor:pointer; padding:5px 8px; border-radius:3px; background:#ffffff; border:1px solid #c9dae7; transition:all 0.15s;" onclick="selectRoleByLabel('Member / Volunteer')" onmouseover="this.style.borderColor='var(--gold-600)'" onmouseout="this.style.borderColor='#c9dae7'">
+              <strong>Member / Volunteer:</strong> <code>priya.nair@college.edu</code> &middot; <code>Mem@1234</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 2: CLUB CREATION REQUEST FORM
+============================================================ -->
+<div id="request" class="screen">
+  <div class="main-header">
+    <div class="brand-mark">
+      <div class="crest"><img src="assets/nitt-logo.png" alt="Institute Logo"></div>
+      <div class="brand-text">
+        <div class="eyebrow">New Request</div>
+        <div class="name">Club Creation Request Form</div>
+      </div>
+    </div>
+    <button class="btn btn-outline" onclick="goTo('landing')">&larr; Back to Sign In</button>
+  </div>
+
+  <div style="max-width:760px; margin:30px auto; padding:0 20px 60px;">
+    <div class="card card-pad">
+      <h3 style="margin-bottom:4px;">Tell us about the club you want to start</h3>
+      <p class="sub" style="color:var(--text-muted); font-size:12.5px; margin-bottom:20px;">Your request will be reviewed by the Super Admin. You'll receive credentials by email once it is approved.</p>
+
+      <div class="field">
+        <label>Club Name</label>
+        <input type="text" placeholder="e.g. Code Culture — Competitive Programming Club">
+      </div>
+
+      <div class="field">
+        <label>Description</label>
+        <textarea placeholder="What does this club do, and who is it for?"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Objective</label>
+        <textarea placeholder="What outcomes will this club work towards this year?"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Category</label>
+        <select>
+          <option>Technical</option>
+          <option>Cultural</option>
+          <option>Literary</option>
+          <option>Sports</option>
+          <option>Professional / Career</option>
+          <option>Social Service</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Proposed Faculty Advisor</label>
+        <input type="text" placeholder="Name of a faculty member who has agreed to advise the club">
+      </div>
+
+      <div class="field">
+        <label>Supporting Documents</label>
+        <div style="border:1px dashed var(--border); border-radius:var(--radius); padding:16px; font-size:12.5px; color:var(--text-muted); background:#fafbfc;">
+          Attach: Proof of interest / signatures, Draft Constitution, Record of past activities (if any)
+          <div style="margin-top:10px;"><button type="button" class="btn btn-outline btn-sm">Choose Files</button> <span style="margin-left:8px;">No files chosen</span></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Other Details</label>
+        <textarea placeholder="Anything else the Super Admin should know"></textarea>
+      </div>
+
+      <button class="btn btn-primary" onclick="goTo('confirm')">Submit Request</button>
+      <button class="btn btn-outline" onclick="goTo('landing')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 3: REQUEST CONFIRMATION
+============================================================ -->
+<div id="confirm" class="screen">
+  <div class="confirm-wrap">
+    <div class="confirm-icon">&#10003;</div>
+    <h2>Request submitted</h2>
+    <p style="color:var(--text-muted);">Your club creation request has been sent to the Super Admin for verification. You'll be notified by email at each stage.</p>
+    <div class="id-box">REQ-2026-00147</div>
+    <div><span class="badge badge-warning">Pending Review</span></div>
+    <div style="margin-top:26px;"><button class="btn btn-primary" onclick="goTo('landing')">Back to Sign In</button></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN 4: MAIN APP (Super Admin console / Club workspace)
+============================================================ -->
+<div id="app" class="screen">
+
+  <div class="topbar">
+    <div class="left">
+      <span>Student Affairs Council &middot; Academic Year 2026&ndash;27</span>
+    </div>
+    <div class="right">
+      <a href="#">Help</a>
+      <a href="#">&#128276; <span id="notifCount">3</span></a>
+      <div class="user-chip">
+        <div class="avatar" id="userInitials">CP</div>
+        <span id="userLabel">Arjun Mehta &middot; Club President</span>
+      </div>
+      <a href="#" onclick="goTo('landing'); return false;">Sign Out</a>
+    </div>
+  </div>
+
+  <div class="main-header">
+    <div style="display:flex; align-items:center; gap:14px;">
+      <button class="menu-toggle" onclick="toggleSidebar()">&#9776; Menu</button>
+      <div class="brand-mark">
+        <div class="crest"><img src="assets/nitt-logo.png" alt="Institute Logo"></div>
+        <div class="brand-text">
+          <div class="eyebrow" id="headerEyebrow">Club Workspace</div>
+          <div class="name">Club Activity Management System</div>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-gold btn-sm" data-role-club onclick="showModal('modal-event')">+ Create Event</button>
+      <button class="btn btn-gold btn-sm" data-role-admin onclick="showView('verification')">Review Queue</button>
+    </div>
+  </div>
+
+  <div class="ticker">
+    <div class="ticker-tag">NOTICE BOARD</div>
+    <div class="ticker-track">
+      <div class="ticker-move">
+        <span>Code Culture — Weekly Contest #42 scheduled for Saturday, 6:00 PM</span>
+        <span>Robotics &amp; Automation Club — Prototype submission deadline extended to Aug 3</span>
+        <span>Student Affairs — New club creation requests must include a signed advisor consent form</span>
+        <span>Photography Society — Annual exhibition registrations now open</span>
+        <span>Finance &amp; Investment Cell — Approved and onboarded on Jul 22, 2026</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="group-label" data-role-club>Club Workspace</div>
+      <div class="nav-item active" data-role-club data-view="overview" onclick="showView('overview')"><span class="nav-icon">&#9632;</span> Overview</div>
+      <div class="nav-item" data-role-club data-view="members" onclick="showView('members')"><span class="nav-icon">&#9670;</span> Members &amp; Roles</div>
+      <div class="nav-item" data-role-club data-view="events" onclick="showView('events')"><span class="nav-icon">&#9650;</span> Events</div>
+      <div class="nav-item" data-role-club data-view="tasks" onclick="showView('tasks')"><span class="nav-icon">&#9633;</span> Tasks &amp; Volunteers</div>
+      <div class="nav-item" data-role-club data-view="announcements" onclick="showView('announcements')"><span class="nav-icon">&#9679;</span> Announcements</div>
+      <div class="nav-item" data-role-club data-view="reports" onclick="showView('reports')"><span class="nav-icon">&#9642;</span> Reports</div>
+
+      <div class="group-label" data-role-admin>Admin Console</div>
+      <div class="nav-item" data-role-admin data-view="overview" onclick="showView('overview')"><span class="nav-icon">&#9632;</span> Overview</div>
+      <div class="nav-item" data-role-admin data-view="verification" onclick="showView('verification')"><span class="nav-icon">&#9888;</span> Verification Queue</div>
+      <div class="nav-item" data-role-admin data-view="clubs" onclick="showView('clubs')"><span class="nav-icon">&#9670;</span> Clubs Directory</div>
+      <div class="nav-item" data-role-admin data-view="reports" onclick="showView('reports')"><span class="nav-icon">&#9642;</span> Reports</div>
+      <div class="nav-item" data-role-admin data-view="audit" onclick="showView('audit')"><span class="nav-icon">&#9673;</span> Audit Log</div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="content">
+
+      <!-- OVERVIEW (club) -->
+      <section id="view-overview" class="view active">
+        <div data-role-club>
+          <div class="content-head">
+            <div>
+              <div class="crumbs">Code Culture &middot; Overview</div>
+              <h2>Welcome back, Arjun</h2>
+              <div class="sub">Here's what's happening in your club this week.</div>
+            </div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-card"><div class="label">Active Members</div><div class="value">48</div><div class="delta">+3 this month</div></div>
+            <div class="stat-card gold"><div class="label">Upcoming Events</div><div class="value">3</div><div class="delta">Next: Aug 1</div></div>
+            <div class="stat-card"><div class="label">Pending Tasks</div><div class="value">7</div><div class="delta">2 due this week</div></div>
+            <div class="stat-card"><div class="label">Certificates Issued</div><div class="value">112</div><div class="delta">Lifetime total</div></div>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <div class="panel-title"><h3>Recent Activity</h3></div>
+              <ul class="activity-list">
+                <li><span class="dot"></span><div>Divya Rao marked attendance for "Intro to DSA Workshop" — 34 present<span class="time">Today, 10:20 AM</span></div></li>
+                <li><span class="dot"></span><div>New volunteer request from Priya Nair for "Annual Hackathon 2026"<span class="time">Yesterday, 6:40 PM</span></div></li>
+                <li><span class="dot"></span><div>Certificate auto-generated for 12 participants of "Git &amp; GitHub Bootcamp"<span class="time">Jul 27, 2026</span></div></li>
+                <li><span class="dot"></span><div>Faculty Advisor Dr. R. Sharma approved the event budget for Hackathon 2026<span class="time">Jul 25, 2026</span></div></li>
+              </ul>
+            </div>
+            <div class="card">
+              <div class="panel-title"><h3>Role Permissions</h3></div>
+              <div class="card-pad">
+                <span class="role-chip">Faculty Advisor</span>
+                <span class="role-chip">Vice President</span>
+                <span class="role-chip">Coordinator</span>
+                <span class="role-chip">Core Member</span>
+                <span class="role-chip">Volunteer</span>
+                <span class="role-chip">General Member</span>
+                <p style="font-size:12px; color:var(--text-muted); margin-top:10px;">Access follows the principle of least privilege — each role sees only what it needs.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OVERVIEW (admin) -->
+        <div data-role-admin>
+          <div class="content-head">
+            <div>
+              <div class="crumbs">Admin Console &middot; Overview</div>
+              <h2>Institute-wide overview</h2>
+              <div class="sub">Verification and club health across the institute.</div>
+            </div>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-card gold"><div class="label">Pending Requests</div><div class="value">5</div><div class="delta">2 need more info</div></div>
+            <div class="stat-card"><div class="label">Active Clubs</div><div class="value">32</div><div class="delta">+1 this term</div></div>
+            <div class="stat-card"><div class="label">Flagged Documents</div><div class="value">2</div><div class="delta">Needs review</div></div>
+            <div class="stat-card"><div class="label">Members Across Clubs</div><div class="value">1,240</div><div class="delta">+64 this month</div></div>
+          </div>
+          <div class="card">
+            <div class="panel-title"><h3>Requests Awaiting Action</h3><a href="#" onclick="showView('verification'); return false;">View Verification Queue &rarr;</a></div>
+            <table class="data">
+              <tr><th>Club Name</th><th>Requested By</th><th>Category</th><th>Status</th></tr>
+              <tr><td>Code Culture</td><td>Arjun Mehta</td><td>Technical</td><td><span class="badge badge-info">Under Review</span></td></tr>
+              <tr><td>Wildlife Photography Society</td><td>Divya Rao</td><td>Cultural</td><td><span class="badge badge-warning">Needs Info</span></td></tr>
+              <tr><td>Robotics &amp; Automation Club</td><td>Karthik S</td><td>Technical</td><td><span class="badge badge-neutral">Pending</span></td></tr>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- MEMBERS & ROLES (club) -->
+      <section id="view-members" class="view" data-role-club>
+        <div class="content-head">
+          <div><div class="crumbs">Code Culture &middot; Members &amp; Roles</div><h2>Members &amp; Roles</h2><div class="sub">48 active members</div></div>
+          <div class="toolbar">
+            <input class="search-box" placeholder="Search members...">
+            <button class="btn btn-primary" onclick="showModal('modal-member')">+ Add Member</button>
+          </div>
+        </div>
+        <div class="card">
+          <table class="data">
+            <tr><th>Name</th><th>Role</th><th>Email</th><th>Status</th><th>Actions</th></tr>
+            <tr><td>Dr. R. Sharma</td><td><span class="role-chip">Faculty Advisor</span></td><td>r.sharma@college.edu</td><td><span class="badge badge-success">Active</span></td><td><button class="btn btn-outline btn-sm">Edit</button></td></tr>
+            <tr><td>Arjun Mehta</td><td><span class="role-chip">President</span></td><td>arjun.mehta@college.edu</td><td><span class="badge badge-success">Active</span></td><td><button class="btn btn-outline btn-sm">Edit</button></td></tr>
+            <tr><td>Sneha Kulkarni</td><td><span class="role-chip">Vice President</span></td><td>sneha.k@college.edu</td><td><span class="badge badge-success">Active</span></td><td><button class="btn btn-outline btn-sm">Edit</button></td></tr>
+            <tr><td>Rohan Gupta</td><td><span class="role-chip">Coordinator</span></td><td>rohan.g@college.edu</td><td><span class="badge badge-success">Active</span></td><td><button class="btn btn-outline btn-sm">Edit</button></td></tr>
+            <tr><td>Priya Nair</td><td><span class="role-chip">Core Member</span></td><td>priya.nair@college.edu</td><td><span class="badge badge-success">Active</span></td><td><button class="btn btn-outline btn-sm">Edit</button></td></tr>
+            <tr><td>Karthik S</td><td><span class="role-chip">Volunteer</span></td><td>karthik.s@college.edu</td><td><span class="badge badge-neutral">Inactive</span></td><td><button class="btn btn-outline btn-sm">Edit</button></td></tr>
+            <tr><td>Fatima Sheikh</td><td><span class="role-chip">General Member</span></td><td>fatima.sheikh@college.edu</td><td><span class="badge badge-success">Active</span></td><td><button class="btn btn-outline btn-sm">Edit</button></td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- EVENTS (club) -->
+      <section id="view-events" class="view" data-role-club>
+        <div class="content-head">
+          <div><div class="crumbs">Code Culture &middot; Events</div><h2>Events</h2><div class="sub">Create, publish and track club events</div></div>
+          <button class="btn btn-primary" onclick="showModal('modal-event')">+ Create Event</button>
+        </div>
+        <div class="event-grid">
+          <div class="event-card draft">
+            <div class="event-top"></div>
+            <div class="event-body">
+              <h4>Weekly Contest #42</h4>
+              <div class="meta"><div>Aug 1, 2026 &middot; 6:00 PM</div><div>Venue: Lab Complex, Room 204</div></div>
+              <span class="badge badge-warning">Draft</span>
+            </div>
+            <div class="foot"><span style="font-size:11.5px; color:var(--text-muted);">18 registered</span><button class="btn btn-outline btn-sm">Publish</button></div>
+          </div>
+          <div class="event-card approved">
+            <div class="event-top"></div>
+            <div class="event-body">
+              <h4>Intro to DSA Workshop</h4>
+              <div class="meta"><div>Aug 3, 2026 &middot; 4:00 PM</div><div>Venue: Seminar Hall B</div></div>
+              <span class="badge badge-success">Approved</span>
+            </div>
+            <div class="foot"><span style="font-size:11.5px; color:var(--text-muted);">41 registered</span><button class="btn btn-outline btn-sm">Manage</button></div>
+          </div>
+          <div class="event-card approved">
+            <div class="event-top"></div>
+            <div class="event-body">
+              <h4>Annual Hackathon 2026</h4>
+              <div class="meta"><div>Aug 15&ndash;16, 2026</div><div>Venue: Main Auditorium</div></div>
+              <span class="badge badge-success">Approved</span>
+            </div>
+            <div class="foot"><span style="font-size:11.5px; color:var(--text-muted);">96 registered</span><button class="btn btn-outline btn-sm">Manage</button></div>
+          </div>
+          <div class="event-card completed">
+            <div class="event-top"></div>
+            <div class="event-body">
+              <h4>Git &amp; GitHub Bootcamp</h4>
+              <div class="meta"><div>Jul 27, 2026 &middot; Completed</div><div>Venue: Lab Complex, Room 108</div></div>
+              <span class="badge badge-neutral">Completed</span>
+            </div>
+            <div class="foot"><span style="font-size:11.5px; color:var(--text-muted);">34 attended</span><button class="btn btn-outline btn-sm">View Report</button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TASKS & VOLUNTEERS (club) -->
+      <section id="view-tasks" class="view" data-role-club>
+        <div class="content-head">
+          <div><div class="crumbs">Code Culture &middot; Tasks</div><h2>Tasks &amp; Volunteers</h2><div class="sub">Assign and track event preparation work</div></div>
+          <button class="btn btn-primary">+ New Task</button>
+        </div>
+        <div class="kanban">
+          <div class="kanban-col">
+            <h4>To Do</h4>
+            <div class="kanban-card">Book auditorium for Hackathon 2026<div class="who">Assigned to Rohan Gupta &middot; Due Aug 5</div></div>
+            <div class="kanban-card">Design certificate template<div class="who">Assigned to Priya Nair &middot; Due Aug 8</div></div>
+          </div>
+          <div class="kanban-col progress">
+            <h4>In Progress</h4>
+            <div class="kanban-card">Send sponsor outreach emails<div class="who">Assigned to Sneha Kulkarni &middot; Due Aug 2</div></div>
+            <div class="kanban-card">Set up QR attendance for workshop<div class="who">Assigned to Karthik S &middot; Due Jul 31</div></div>
+          </div>
+          <div class="kanban-col done">
+            <h4>Completed</h4>
+            <div class="kanban-card">Finalize workshop speaker list<div class="who">Completed by Arjun Mehta</div></div>
+            <div class="kanban-card">Publish event on portal<div class="who">Completed by Fatima Sheikh</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANNOUNCEMENTS (club) -->
+      <section id="view-announcements" class="view" data-role-club>
+        <div class="content-head">
+          <div><div class="crumbs">Code Culture &middot; Announcements</div><h2>Announcements</h2><div class="sub">Notify members by email and in-app alert</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card card-pad">
+            <div class="field"><label>Title</label><input type="text" placeholder="e.g. Venue change for Weekly Contest #42"></div>
+            <div class="field"><label>Message</label><textarea placeholder="Write your announcement..."></textarea></div>
+            <button class="btn btn-primary">Publish Announcement</button>
+          </div>
+          <div class="card">
+            <div class="panel-title"><h3>Recently Sent</h3></div>
+            <ul class="activity-list">
+              <li><span class="dot"></span><div>Weekly Contest #42 rescheduled to 6:00 PM<span class="time">Jul 28, 2026</span></div></li>
+              <li><span class="dot"></span><div>Registrations open for Annual Hackathon 2026<span class="time">Jul 24, 2026</span></div></li>
+              <li><span class="dot"></span><div>Reminder: Submit feedback for Git &amp; GitHub Bootcamp<span class="time">Jul 27, 2026</span></div></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- VERIFICATION QUEUE (admin) -->
+      <section id="view-verification" class="view" data-role-admin>
+        <div class="content-head">
+          <div><div class="crumbs">Admin Console &middot; Verification Queue</div><h2>Club Creation Requests</h2><div class="sub">5 requests awaiting action</div></div>
+          <input class="search-box" placeholder="Search requests...">
+        </div>
+        <div class="card">
+          <table class="data">
+            <tr><th>Club Name</th><th>Requested By</th><th>Category</th><th>Documents</th><th>Status</th><th>Action</th></tr>
+            <tr><td>Code Culture</td><td>Arjun Mehta</td><td>Technical</td><td>4 / 4</td><td><span class="badge badge-info">Under Review</span></td><td><button class="btn btn-outline btn-sm" onclick="showModal('modal-review')">Review</button></td></tr>
+            <tr><td>Wildlife Photography Society</td><td>Divya Rao</td><td>Cultural</td><td>2 / 3</td><td><span class="badge badge-warning">Needs Info</span></td><td><button class="btn btn-outline btn-sm" onclick="showModal('modal-review')">Review</button></td></tr>
+            <tr><td>Robotics &amp; Automation Club</td><td>Karthik S</td><td>Technical</td><td>5 / 5</td><td><span class="badge badge-neutral">Pending</span></td><td><button class="btn btn-outline btn-sm" onclick="showModal('modal-review')">Review</button></td></tr>
+            <tr><td>Debate &amp; Literary Forum</td><td>Fatima Sheikh</td><td>Literary</td><td>3 / 3</td><td><span class="badge badge-danger">Rejected</span></td><td><button class="btn btn-outline btn-sm" onclick="showModal('modal-review')">View</button></td></tr>
+            <tr><td>Finance &amp; Investment Cell</td><td>Rohan Gupta</td><td>Professional</td><td>4 / 4</td><td><span class="badge badge-success">Approved</span></td><td><button class="btn btn-outline btn-sm" onclick="showModal('modal-review')">View</button></td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- CLUBS DIRECTORY (admin) -->
+      <section id="view-clubs" class="view" data-role-admin>
+        <div class="content-head">
+          <div><div class="crumbs">Admin Console &middot; Clubs Directory</div><h2>Clubs Directory</h2><div class="sub">32 active clubs</div></div>
+          <input class="search-box" placeholder="Search clubs...">
+        </div>
+        <div class="card">
+          <table class="data">
+            <tr><th>Club Name</th><th>Category</th><th>President</th><th>Advisor</th><th>Members</th><th>Status</th></tr>
+            <tr><td>Code Culture</td><td>Technical</td><td>Arjun Mehta</td><td>Dr. R. Sharma</td><td>48</td><td><span class="badge badge-success">Active</span></td></tr>
+            <tr><td>Robotics &amp; Automation Club</td><td>Technical</td><td>Karthik S</td><td>Dr. M. Iyer</td><td>36</td><td><span class="badge badge-success">Active</span></td></tr>
+            <tr><td>Finance &amp; Investment Cell</td><td>Professional</td><td>Rohan Gupta</td><td>Dr. N. Menon</td><td>29</td><td><span class="badge badge-success">Active</span></td></tr>
+            <tr><td>Drama Circle</td><td>Cultural</td><td>Ananya Das</td><td>Dr. P. Verma</td><td>22</td><td><span class="badge badge-neutral">Inactive</span></td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- REPORTS (shared) -->
+      <section id="view-reports" class="view">
+        <div class="content-head">
+          <div><div class="crumbs">Reports &amp; Analytics</div><h2>Reports</h2><div class="sub">Export data for review or record-keeping</div></div>
+        </div>
+        <div class="report-grid">
+          <div class="report-card"><div class="r-icon">C</div><h4>Club-wise Report</h4><p>Membership, activity and status per club</p><div class="r-actions"><button class="btn btn-outline btn-sm">PDF</button><button class="btn btn-outline btn-sm">Excel</button></div></div>
+          <div class="report-card"><div class="r-icon">E</div><h4>Event Report</h4><p>Registrations, approvals and outcomes</p><div class="r-actions"><button class="btn btn-outline btn-sm">PDF</button><button class="btn btn-outline btn-sm">Excel</button></div></div>
+          <div class="report-card"><div class="r-icon">A</div><h4>Attendance Report</h4><p>QR and manual attendance by event</p><div class="r-actions"><button class="btn btn-outline btn-sm">PDF</button><button class="btn btn-outline btn-sm">Excel</button></div></div>
+          <div class="report-card"><div class="r-icon">M</div><h4>Member Report</h4><p>Roles, activity and join history</p><div class="r-actions"><button class="btn btn-outline btn-sm">PDF</button><button class="btn btn-outline btn-sm">Excel</button></div></div>
+          <div class="report-card"><div class="r-icon">&#9733;</div><h4>Certificate Report</h4><p>Issued, verified and pending certificates</p><div class="r-actions"><button class="btn btn-outline btn-sm">PDF</button><button class="btn btn-outline btn-sm">Excel</button></div></div>
+          <div class="report-card"><div class="r-icon">F</div><h4>Feedback Report</h4><p>Ratings and suggestions by event</p><div class="r-actions"><button class="btn btn-outline btn-sm">PDF</button><button class="btn btn-outline btn-sm">Excel</button></div></div>
+        </div>
+      </section>
+
+      <!-- AUDIT LOG (admin) -->
+      <section id="view-audit" class="view" data-role-admin>
+        <div class="content-head">
+          <div><div class="crumbs">Admin Console &middot; Audit Log</div><h2>Audit Log</h2><div class="sub">Every action recorded for accountability</div></div>
+        </div>
+        <div class="card">
+          <table class="data">
+            <tr><th>Timestamp</th><th>User</th><th>Action</th><th>Module</th></tr>
+            <tr><td>Jul 29, 2026 &middot; 09:12</td><td>Super Admin</td><td>Approved club request</td><td>Verification</td></tr>
+            <tr><td>Jul 28, 2026 &middot; 18:40</td><td>Arjun Mehta</td><td>Created event "Weekly Contest #42"</td><td>Events</td></tr>
+            <tr><td>Jul 28, 2026 &middot; 14:02</td><td>Super Admin</td><td>Requested more info on request REQ-0142</td><td>Verification</td></tr>
+            <tr><td>Jul 27, 2026 &middot; 11:15</td><td>Divya Rao</td><td>Marked attendance (34 present)</td><td>Attendance</td></tr>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: Verification review (matches Super Admin checklist)
+============================================================ -->
+<div class="modal-overlay" id="modal-review">
+  <div class="modal">
+    <div class="modal-head"><h3>Review: Code Culture</h3><button class="modal-close" onclick="hideModal('modal-review')">&times;</button></div>
+    <div class="modal-body">
+      <p style="font-size:12.5px; color:var(--text-muted); margin-top:0;">Requested by Arjun Mehta &middot; Category: Technical &middot; Submitted Jul 26, 2026</p>
+      <ul class="checklist">
+        <li><input type="checkbox" checked disabled> Check documents (Constitution, Proof, Past Activities)</li>
+        <li><input type="checkbox" checked disabled> Validate club does not already exist</li>
+        <li><input type="checkbox" checked disabled> Verify proposed Faculty Advisor</li>
+        <li><input type="checkbox"> Check name uniqueness</li>
+        <li><input type="checkbox"> Additional clarification requested, if needed</li>
+      </ul>
+      <div class="field"><label>Remarks (optional)</label><textarea placeholder="Add a note for the requester..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger-outline" onclick="hideModal('modal-review')">Reject</button>
+      <button class="btn btn-outline" onclick="hideModal('modal-review')">Ask for More Info</button>
+      <button class="btn btn-success-outline" onclick="hideModal('modal-review')">Approve</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add member -->
+<div class="modal-overlay" id="modal-member">
+  <div class="modal">
+    <div class="modal-head"><h3>Add Member</h3><button class="modal-close" onclick="hideModal('modal-member')">&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Full Name</label><input type="text" placeholder="e.g. Neha Kapoor"></div>
+      <div class="field"><label>Email</label><input type="text" placeholder="neha.kapoor@college.edu"></div>
+      <div class="field"><label>Role</label>
+        <select><option>General Member</option><option>Volunteer</option><option>Core Member</option><option>Coordinator</option><option>Vice President</option></select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="hideModal('modal-member')">Cancel</button>
+      <button class="btn btn-primary" onclick="hideModal('modal-member')">Send Invitation</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Create event -->
+<div class="modal-overlay" id="modal-event">
+  <div class="modal">
+    <div class="modal-head"><h3>Create Event</h3><button class="modal-close" onclick="hideModal('modal-event')">&times;</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Event Title</label><input type="text" placeholder="e.g. Dynamic Programming Deep Dive"></div>
+      <div class="field"><label>Description</label><textarea placeholder="What is this event about?"></textarea></div>
+      <div class="field"><label>Date &amp; Time</label><input type="text" placeholder="e.g. Aug 6, 2026, 5:00 PM"></div>
+      <div class="field"><label>Venue</label><input type="text" placeholder="e.g. Seminar Hall B"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="hideModal('modal-event')">Save as Draft</button>
+      <button class="btn btn-primary" onclick="hideModal('modal-event')">Submit for Approval</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ----- screen navigation (landing / request form / confirmation / app) -----
+  function goTo(id){
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  // ----- demo credentials & auto-fill -----
+  var roleCreds = {
+    'Club President': { email: 'arjun.mehta@college.edu', pass: 'Pres@1234' },
+    'Super Admin': { email: 'rekha.iyer@nitt.edu', pass: 'Admin@1234' },
+    'Faculty Advisor': { email: 'r.sharma@college.edu', pass: 'Adv@1234' },
+    'Member / Volunteer': { email: 'priya.nair@college.edu', pass: 'Mem@1234' }
+  };
+
+  function fillDemoForActiveRole() {
+    var c = roleCreds[selectedLabel];
+    if (c) {
+      var idInput = document.getElementById('loginId');
+      var passInput = document.getElementById('loginPass');
+      if (idInput) idInput.value = c.email;
+      if (passInput) passInput.value = c.pass;
+    }
+  }
+
+  window.selectRoleByLabel = function(label) {
+    document.querySelectorAll('.role-tab').forEach(function(t){
+      if (t.getAttribute('data-label') === label) {
+        t.click();
+      }
+    });
+  };
+
+  // ----- role tab selection on the login card -----
+  var selectedRole = 'club';
+  var selectedLabel = 'Club President';
+  var roleTabsEl = document.getElementById('roleTabs');
+  if (roleTabsEl) {
+    roleTabsEl.addEventListener('click', function(e){
+      var btn = e.target.closest('.role-tab');
+      if(!btn) return;
+      document.querySelectorAll('.role-tab').forEach(function(t){ t.classList.remove('selected'); });
+      btn.classList.add('selected');
+      selectedRole = btn.getAttribute('data-role');
+      selectedLabel = btn.getAttribute('data-label');
+      fillDemoForActiveRole();
+      var alertEl = document.getElementById('loginAlert');
+      if (alertEl) { alertEl.style.display = 'none'; alertEl.innerHTML = ''; }
+    });
+  }
+
+  // Pre-fill on startup
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fillDemoForActiveRole);
+  } else {
+    fillDemoForActiveRole();
+  }
+
+  // Handle Enter key inside inputs
+  ['loginId', 'loginPass'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          signIn();
+        }
+      });
+    }
+  });
+
+  // ----- sign in: swap the app shell into admin or club mode -----
+  function signIn(){
+    var body = document.body;
+    body.classList.remove('role-superadmin','role-club');
+    if(selectedRole === 'superadmin'){
+      body.classList.add('role-superadmin');
+      document.getElementById('headerEyebrow').textContent = 'Admin Console';
+      document.getElementById('userLabel').textContent = 'Rekha Iyer · Super Admin';
+      document.getElementById('userInitials').textContent = 'RI';
+      showView('overview');
+    } else {
+      body.classList.add('role-club');
+      document.getElementById('headerEyebrow').textContent = 'Club Workspace';
+      document.getElementById('userLabel').textContent = 'Arjun Mehta · ' + selectedLabel;
+      document.getElementById('userInitials').textContent = selectedLabel.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+      showView('overview');
+    }
+    goTo('app');
+  }
+
+  function goTo(id){
+    document.querySelectorAll('.screen').forEach(function(s){
+      s.classList.remove('active');
+      s.style.display = 'none';
+    });
+    var target = document.getElementById(id);
+    if (target) {
+      target.classList.add('active');
+      target.style.display = 'block';
+    }
+    window.scrollTo(0,0);
+  }
+
+  // Ensure landing is active on load
+  goTo('landing');
+
+  // ----- sidebar view switching -----
+  function showView(name){
+    document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+    var target = document.getElementById('view-' + name);
+    if(target) target.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(function(n){
+      n.classList.toggle('active', n.getAttribute('data-view') === name);
+    });
+    document.getElementById('sidebar').classList.remove('open');
+  }
+
+  function toggleSidebar(){
+    document.getElementById('sidebar').classList.toggle('open');
+  }
+
+  // ----- modal helpers -----
+  function showModal(id){ document.getElementById(id).classList.add('active'); }
+  function hideModal(id){ document.getElementById(id).classList.remove('active'); }
+</script>
+<script src="assets/api.js"></script>
+<script src="assets/app.js"></script>
+<script>
+  // Wire sign in button to real authentication
+  var origSignIn = signIn;
+  window.signIn = function() {
+    if (typeof handleSignIn === 'function') {
+      handleSignIn();
+    } else {
+      origSignIn();
+    }
+  };
+
+  // Direct click listener on sign-in button
+  var signInBtn = document.getElementById('signInBtn');
+  if (signInBtn) {
+    signInBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      signIn();
+    });
+  }
+
+  // Wire sign out link
+  var signOutLink = document.querySelector('.topbar .right a[onclick*="landing"]');
+  if (signOutLink) {
+    signOutLink.onclick = function(e) {
+      e.preventDefault();
+      if (typeof handleSignOut === 'function') handleSignOut();
+      else goTo('landing');
+      return false;
+    };
+  }
+</script>
+</body>
+</html>
